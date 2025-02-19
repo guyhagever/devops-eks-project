@@ -33,7 +33,10 @@ pipeline {
                     }
 
                     // Parse e.g. "1.0.0" -> [1, 0, 0]
-                    def (major, minor, patch) = env.CURRENT_VERSION.tokenize('.')*.toInteger()
+                    def splitted = env.CURRENT_VERSION.tokenize('.')
+                    int major = splitted[0].toInteger()
+                    int minor = splitted[1].toInteger()
+                    int patch = splitted[2].toInteger()
                     // Increment patch by 1
                     patch = patch + 1
                     def newVersion = "${major}.${minor}.${patch}"
