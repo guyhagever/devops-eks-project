@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Book Database</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Book Database</h1>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/history">Search History</a>
+    </nav>
+  </header>
+
+  <div class="search-section">
+    <input id="searchInput" type="text" placeholder="Search for a book..." />
+    <button id="searchBtn">Search</button>
+  </div>
+
+  <div id="books-container"></div>
+
+  <script>
+    const searchBtn = document.getElementById('searchBtn');
+    const searchInput = document.getElementById('searchInput');
+    const booksContainer = document.getElementById('books-container');
+
+    // Handle searching
+    searchBtn.addEventListener('click', async () => {
+      const query = searchInput.value.trim();
+      if(!query) return;
+
+      // call the API
+      const res = await fetch('/api/books?search=' + encodeURIComponent(query));
+      const data = await res.json();
+
+      // Show results
+      booksContainer.innerHTML = "";
+      data.forEach(book => {
+        const div = document.createElement('div');
+        div.className = 'book-card';
+        div.innerHTML = `
+          <h2>${book.title}</h2>
+          <p><strong>Author:</strong> ${book.author}</p>
+          <p><strong>Year:</strong> ${book.year}</p>
+          <p><strong>Sold:</strong> ${book.sold} copies</p>
+        `;
+        booksContainer.appendChild(div);
+      });
+      searchInput.value = "";
+    });
+  </script>
+</body>
+</html>
