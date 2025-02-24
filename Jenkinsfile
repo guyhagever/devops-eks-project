@@ -82,10 +82,10 @@ pipeline {
                       kubectl set image deployment/${DEPLOYMENT_NAME} ${CONTAINER_NAME}=${DOCKER_REPO}:${versionTag} --record
                       kubectl rollout status deployment/${DEPLOYMENT_NAME}
                     """
+                }
+            }
         }
     }
-}
-
 
     post {
         success {
@@ -95,5 +95,4 @@ pipeline {
             echo "Pipeline failed."
         }
     }
-}
 }
