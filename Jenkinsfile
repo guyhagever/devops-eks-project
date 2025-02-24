@@ -73,15 +73,19 @@ pipeline {
                     def versionTag = env.NEW_VERSION ?: env.CURRENT_VERSION
                     // Update local kubeconfig for EKS
                     sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${CLUSTER_NAME}"
-                    // Update the Deployment's container image
+                    
+                    // Apply the deployment manifest
+                    sh "kubectl apply -f k8s/deployment.yaml"
+            
+                    // Then update the deployment's container image
                     sh """
                       kubectl set image deployment/${DEPLOYMENT_NAME} ${CONTAINER_NAME}=${DOCKER_REPO}:${versionTag} --record
                       kubectl rollout status deployment/${DEPLOYMENT_NAME}
                     """
-                }
-            }
         }
     }
+}
+
 
     post {
         success {
