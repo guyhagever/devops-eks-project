@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-search-app-deployment
+  labels:
+    app: book-search-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: book-search-app
+  template:
+    metadata:
+      labels:
+        app: book-search-app
+    spec:
+      containers:
+      - name: book-search-app-container
+        image: guyhagever/my-booksearch-app:latest
+        ports:
+        - containerPort: 3000
