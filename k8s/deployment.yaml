@@ -14,8 +14,28 @@ spec:
       labels:
         app: book-search-app
     spec:
+      terminationGracePeriodSeconds: 30  # Graceful shutdown period
       containers:
       - name: book-search-app-container
         image: guyhagever/my-booksearch-app:latest
         ports:
         - containerPort: 3000
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
