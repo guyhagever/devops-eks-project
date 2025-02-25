@@ -69,11 +69,18 @@ pipeline {
                     echo "Running tests for Docker image: ${DOCKER_REPO}:${versionTag}"
                     // Run npm test inside the container
                     sh "docker run --rm ${DOCKER_REPO}:${versionTag} npm test"
-                    // Archive test results if they are generated (adjust the path if necessary)
-                    junit 'test-results/*.xml'
+            
+                    // Check if test report files exist before trying to archive them
+                    def testReports = findFiles(glob: 'test-results/*.xml')
+                    if (testReports.length > 0) {
+                        junit 'test-results/*.xml'
+                    } else {
+                        echo "No test reports found. Skipping junit step."
+                    }
                 }
             }
         }
+
 
 
         stage('Deploy to Kubernetes (microk8s)') {
