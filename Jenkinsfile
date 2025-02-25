@@ -8,11 +8,7 @@ pipeline {
         DOCKER_REPO = "guyhagever/my-booksearch-app"
         CURRENT_VERSION = "1.0.0"
 
-        // AWS/EKS info
-        AWS_REGION = "il-central-1"
-        CLUSTER_NAME = "my-eks-cluster"
-
-        // K8s deployment details
+        // Kubernetes deployment details for microk8s
         DEPLOYMENT_NAME = "book-search-app-deployment"
         CONTAINER_NAME = "book-search-app-container"
     }
@@ -27,14 +23,14 @@ pipeline {
         stage('Increment Version') {
             steps {
                 script {
+                    // If a VERSION.txt file exists, use it as the current version
                     if (fileExists('VERSION.txt')) {
                         env.CURRENT_VERSION = readFile('VERSION.txt').trim()
                     }
                     def splitted = env.CURRENT_VERSION.tokenize('.')
                     int major = splitted[0].toInteger()
                     int minor = splitted[1].toInteger()
-                    int patch = splitted[2].toInteger()
-                    patch = patch + 1
+                    int patch = splitted[2].toInteger() + 1
                     def newVersion = "${major}.${minor}.${patch}"
                     echo "Old version: ${env.CURRENT_VERSION}"
                     echo "New version: ${newVersion}"
@@ -47,10 +43,8 @@ pipeline {
             steps {
                 script {
                     def versionTag = env.NEW_VERSION ?: env.CURRENT_VERSION
-                    sh """
-                      echo "Building Docker image: ${DOCKER_REPO}:${versionTag}"
-                      docker build -t ${DOCKER_REPO}:${versionTag} .
-                    """
+                    echo "Building Docker image: ${DOCKER_REPO}:${versionTag}"
+                    sh "docker build -t ${DOCKER_REPO}:${versionTag} ."
                 }
             }
         }
@@ -59,28 +53,43 @@ pipeline {
             steps {
                 script {
                     def versionTag = env.NEW_VERSION ?: env.CURRENT_VERSION
+                    echo "Pushing Docker image: ${DOCKER_REPO}:${versionTag}"
                     sh """
-                      docker login -u ${DOCKERHUB_CREDENTIALS_USR} -p ${DOCKERHUB_CREDENTIALS_PSW}
-                      docker push ${DOCKER_REPO}:${versionTag}
+                        docker login -u ${DOCKERHUB_CREDENTIALS_USR} -p ${DOCKERHUB_CREDENTIALS_PSW}
+                        docker push ${DOCKER_REPO}:${versionTag}
                     """
                 }
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Test') {
             steps {
                 script {
                     def versionTag = env.NEW_VERSION ?: env.CURRENT_VERSION
-                    // Update local kubeconfig for EKS
-                    sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${CLUSTER_NAME}"
-                    
-                    // Apply the deployment manifest
-                    sh "kubectl apply -f k8s/deployment.yaml"
-            
-                    // Then update the deployment's container image
+                    echo "Running tests for Docker image: ${DOCKER_REPO}:${versionTag}"
+                    // Run the container with a test flag. 
+                    // Ensure your container is set up to execute tests and output results (e.g., in test-results/ directory)
                     sh """
-                      kubectl set image deployment/${DEPLOYMENT_NAME} ${CONTAINER_NAME}=${DOCKER_REPO}:${versionTag} --record
-                      kubectl rollout status deployment/${DEPLOYMENT_NAME}
+                        docker run --rm ${DOCKER_REPO}:${versionTag} java -jar app.jar --runTests
+                    """
+                    // Archive test results if available (adjust the file pattern as needed)
+                    junit 'test-results/*.xml'
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes (microk8s)') {
+            steps {
+                script {
+                    def versionTag = env.NEW_VERSION ?: env.CURRENT_VERSION
+                    echo "Deploying Docker image: ${DOCKER_REPO}:${versionTag} to microk8s"
+                    // Deploy the manifest using microk8s kubectl
+                    sh "microk8s kubectl apply -f k8s/deployment.yaml"
+                    
+                    // Update the container image in the deployment and wait for a successful rollout
+                    sh """
+                        microk8s kubectl set image deployment/${DEPLOYMENT_NAME} ${CONTAINER_NAME}=${DOCKER_REPO}:${versionTag} --record
+                        microk8s kubectl rollout status deployment/${DEPLOYMENT_NAME}
                     """
                 }
             }
@@ -88,6 +97,10 @@ pipeline {
     }
 
     post {
+        always {
+            echo "Cleaning up workspace..."
+            cleanWs()
+        }
         success {
             echo "Pipeline finished successfully."
         }
