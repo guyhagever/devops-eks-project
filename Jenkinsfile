@@ -67,16 +67,14 @@ pipeline {
                 script {
                     def versionTag = env.NEW_VERSION ?: env.CURRENT_VERSION
                     echo "Running tests for Docker image: ${DOCKER_REPO}:${versionTag}"
-                    // Run the container with a test flag. 
-                    // Ensure your container is set up to execute tests and output results (e.g., in test-results/ directory)
-                    sh """
-                        docker run --rm ${DOCKER_REPO}:${versionTag} java -jar app.jar --runTests
-                    """
-                    // Archive test results if available (adjust the file pattern as needed)
+                    // Run npm test inside the container
+                    sh "docker run --rm ${DOCKER_REPO}:${versionTag} npm test"
+                    // Archive test results if they are generated (adjust the path if necessary)
                     junit 'test-results/*.xml'
                 }
             }
         }
+
 
         stage('Deploy to Kubernetes (microk8s)') {
             steps {
