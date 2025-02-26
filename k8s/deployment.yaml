@@ -6,6 +6,7 @@ metadata:
     app: book-search-app
 spec:
   replicas: 2
+  progressDeadlineSeconds: 600  # Allow up to 10 minutes for rollout if needed
   selector:
     matchLabels:
       app: book-search-app
@@ -20,6 +21,18 @@ spec:
         image: guyhagever/my-booksearch-app:latest
         ports:
         - containerPort: 3000
+        env:
+          # Database connection settings – these allow your app to locate and authenticate with MySQL
+          - name: DB_HOST
+            value: "mysql"             # Should match the Service name for MySQL in your cluster
+          - name: DB_PORT
+            value: "3306"
+          - name: DB_USER
+            value: "root"              # Use the username as defined in your MySQL Deployment
+          - name: DB_PASSWORD
+            value: "rootpassword"      # Must match the MYSQL_ROOT_PASSWORD in your MySQL Deployment
+          - name: DB_NAME
+            value: "book_db"           # The name of the database your app expects (created during initDB)
         resources:
           requests:
             cpu: "250m"
@@ -31,7 +44,7 @@ spec:
           httpGet:
             path: /health
             port: 3000
-          initialDelaySeconds: 10
+          initialDelaySeconds: 20  # Give your app some extra time to initialize and connect to MySQL
           periodSeconds: 5
         livenessProbe:
           httpGet:
