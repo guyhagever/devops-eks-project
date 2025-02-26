@@ -113,10 +113,21 @@ app.get('/history', async (req, res) => {
   }
 });
 
+// 4) Enhanced /health endpoint for Kubernetes probes
+app.get('/health', async (req, res) => {
+  try {
+    // Perform a simple query to verify database connectivity
+    await db.query('SELECT 1');
+    res.sendStatus(200);
+  } catch (err) {
+    console.error('Health check failed:', err);
+    res.sendStatus(500);
+  }
+});
+
 // Initialize DB and start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log('Server listening on port', PORT);
   await initDB();
 });
-
