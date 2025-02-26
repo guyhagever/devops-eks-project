@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: "rootpassword"  # Use a secure password in production!
+          - name: MYSQL_DATABASE
+            value: "book_db"       # This should match the DB_NAME in your app deployment
+        ports:
+          - containerPort: 3306
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "250m"
+            memory: "512Mi"
