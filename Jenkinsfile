@@ -80,15 +80,26 @@ pipeline {
                 }
             }
         }
-
-
+        
+        stage('Deploy MySQL') {
+            steps {
+                script {
+                    echo "Deploying MySQL to Kubernetes (microk8s)"
+                    // Deploy MySQL Deployment and Service YAMLs (ensure these files are in the k8s/ directory)
+                    sh "microk8s kubectl apply -f k8s/mysql-deployment.yaml"
+                    sh "microk8s kubectl apply -f k8s/mysql-service.yaml"
+                    // Optionally wait for MySQL rollout to complete
+                    sh "microk8s kubectl rollout status deployment/mysql"
+                }
+            }
+        }
 
         stage('Deploy to Kubernetes (microk8s)') {
             steps {
                 script {
                     def versionTag = env.NEW_VERSION ?: env.CURRENT_VERSION
                     echo "Deploying Docker image: ${DOCKER_REPO}:${versionTag} to microk8s"
-                    // Deploy the manifest using microk8s kubectl
+                    // Deploy the application manifest
                     sh "microk8s kubectl apply -f k8s/deployment.yaml"
                     
                     // Update the container image in the deployment and wait for a successful rollout
